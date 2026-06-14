@@ -93,7 +93,8 @@ const VOICE_PRESETS = {
 };
 
 
-const STATUS_LABEL = { idle:"Tap to speak", listening:"Listening…", thinking:"Nova is thinking…", speaking:"Nova is speaking…" };
+let micMuted = false;
+const STATUS_LABEL = { idle:"Starting mic…", listening:"Listening…", thinking:"Nova is thinking…", speaking:"Nova is speaking…" };
 const STATUS_COLOR = { idle:"#475569", listening:"#f472b6", thinking:"#34d399", speaking:"#818cf8" };
 const ORB_COLOR   = { idle:"#334155", listening:"#f472b6", thinking:"#34d399", speaking:"#818cf8" };
 const ORB_GLOW    = { idle:"#1e293b", listening:"#db2777", thinking:"#10b981", speaking:"#6366f1" };
@@ -200,8 +201,11 @@ function syncCallUI() {
   const btn = document.getElementById('mic-btn');
   const hint = document.getElementById('mic-hint');
   if (btn) {
-    btn.textContent = status==="listening"?"⏹":status==="speaking"?"⏩":"🎙";
-    if (status==="listening") {
+    btn.textContent = micMuted ? "🔇" : "🎙";
+    if (micMuted) {
+      btn.style.background = "linear-gradient(135deg,#64748b,#94a3b8)";
+      btn.style.boxShadow = "0 0 0 3px rgba(100,116,139,0.22),0 8px 24px rgba(100,116,139,0.32)";
+    } else if (status==="listening") {
       btn.style.background = "linear-gradient(135deg,#db2777,#f472b6)";
       btn.style.boxShadow = "0 0 0 3px rgba(244,114,182,0.28),0 8px 24px rgba(219,39,119,0.38)";
     } else if (status==="speaking") {
@@ -213,11 +217,11 @@ function syncCallUI() {
     }
   }
   if (hint) {
-    hint.textContent = status==="listening"
-      ? 'Pause to submit · tap ⏹ to cancel'
+    hint.textContent = micMuted
+      ? 'Mic muted · tap 🎙 to unmute'
       : status==="speaking"
-      ? 'Tap ⏩ to interrupt'
-      : 'Tap mic to speak · "goodbye" to end';
+      ? 'Nova is speaking… · tap 🔇 to mute'
+      : 'Hands-free — just speak naturally · "goodbye" to end';
   }
 }
 
@@ -475,7 +479,10 @@ function startListen() {
     stopViz(); clearTimeout(silenceTimer);
     const said = buf.trim(); interimText = ""; liveText = ""; syncCallUI();
     if (said.length > 2 && !["thinking","speaking"].includes(status)) handleSpeak(said);
-    else if (said.length <= 2) { status = "idle"; syncCallUI(); }
+    else if (said.length <= 2 && !micMuted && !["thinking","speaking","ended"].includes(status)) {
+      // Nothing meaningful said — restart listening automatically (hands-free)
+      setTimeout(startListen, 300);
+    }
     buf = "";
   };
 
@@ -483,6 +490,8 @@ function startListen() {
     stopViz();
     if (!["no-speech","aborted"].includes(e.error)) setCallError("Mic error: " + e.error);
     status = "idle"; syncCallUI();
+    // Auto-restart on no-speech (hands-free — mic stays open)
+    if (e.error === "no-speech" && !micMuted) setTimeout(startListen, 300);
   };
 
   rec.start();
@@ -559,7 +568,7 @@ async function startCall() {
     synth.speak(unlock);
   } catch {}
   jobTitle = document.getElementById('job-title').value || "Web Developer";
-  messages = []; elapsed = 0;
+  messages = []; elapsed = 0; micMuted = false;
 
   showScreen('call-screen');
   maybeShowTips();
@@ -631,9 +640,16 @@ document.getElementById('btn-again').addEventListener('click', startCall);
 document.getElementById('btn-edit').addEventListener('click', reset);
 
 document.getElementById('mic-btn').addEventListener('click', () => {
-  if (status==="listening") stopListen();
-  else if (status==="speaking") { synth.cancel(); aiCaption=""; status="idle"; syncCallUI(); setTimeout(startListen,200); }
-  else startListen();
+  micMuted = !micMuted;
+  if (micMuted) {
+    // Mute: stop listening and stop any speech
+    if (status === "listening") { recInstance?.stop(); stopViz(); }
+    synth.cancel(); aiCaption = ""; status = "idle"; syncCallUI();
+  } else {
+    // Unmute: restart listening if not already busy
+    syncCallUI();
+    if (!["thinking","speaking"].includes(status)) setTimeout(startListen, 200);
+  }
 });
 
 // File input
