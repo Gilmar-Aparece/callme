@@ -467,12 +467,17 @@ function stopViz() {
 function speak(text, onDone) {
   synth.cancel();
   aiCaption = text; status = "speaking"; syncCallUI();
+
   const u = new SpeechSynthesisUtterance(text);
   u.rate = 1.0; u.pitch = 1.05; u.volume = 1;
-  const voices = synth.getVoices();
-  const v = voices.find(v => /samantha|karen|victoria|zira|google.*female/i.test(v.name))
-    || voices.find(v => /en-(US|GB)/i.test(v.lang));
-  if (v) u.voice = v;
+
+  const pickVoice = () => {
+    const voices = synth.getVoices();
+    const v = voices.find(v => /samantha|karen|victoria|zira|google.*female/i.test(v.name))
+      || voices.find(v => /en-(US|GB)/i.test(v.lang));
+    if (v) u.voice = v;
+  };
+  pickVoice();
 
   let done = false;
   const finish = () => {
@@ -484,18 +489,27 @@ function speak(text, onDone) {
   u.onend = finish;
   u.onerror = finish;
 
-  // Fallback: some browsers (esp. mobile) silently fail to fire onend/onerror.
-  // Estimate ~110ms per word (min 4s) and force progress if TTS gets stuck.
-  const estMs = Math.max(4000, text.split(/\s+/).length * 380);
+  // Fallback: some browsers silently fail to fire onend/onerror.
+  // Estimate ~190ms per word (min 4s, max 30s) and force progress if stuck.
+  const estMs = Math.min(30000, Math.max(4000, text.split(/\s+/).length * 380));
   setTimeout(finish, estMs);
 
-  synth.speak(u);
-
-  // Extra guard: if speech never actually starts (some Android WebViews),
-  // bail out quickly so the conversation doesn't hang.
-  setTimeout(() => {
-    if (!done && !synth.speaking && !synth.pending) finish();
-  }, 600);
+  // If voices aren't loaded yet (common on first load in Chrome/Android),
+  // wait for them, then speak.
+  if (synth.getVoices().length === 0) {
+    let spoken = false;
+    const doSpeak = () => {
+      if (spoken) return;
+      spoken = true;
+      pickVoice();
+      synth.speak(u);
+    };
+    synth.addEventListener("voiceschanged", doSpeak, { once: true });
+    // Safety: if voiceschanged never fires, speak anyway after a short wait
+    setTimeout(doSpeak, 300);
+  } else {
+    synth.speak(u);
+  }
 }
 
 // ════════════════════════════════════════════════
@@ -602,6 +616,15 @@ async function startCall() {
     e.textContent = "Please upload your resume or paste your background first.";
     e.classList.remove('hidden'); return;
   }
+
+  // Unlock speech synthesis on mobile browsers — must happen inside a
+  // direct user-gesture handler (this click), not inside a setTimeout.
+  try {
+    synth.cancel();
+    const unlock = new SpeechSynthesisUtterance(" ");
+    unlock.volume = 0;
+    synth.speak(unlock);
+  } catch {}
   jobTitle = document.getElementById('job-title').value || "Web Developer";
   messages = []; elapsed = 0;
   questionIndex = 0; usedTech = []; pendingDurationFollowup = false;
