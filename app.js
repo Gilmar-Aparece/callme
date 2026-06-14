@@ -207,6 +207,16 @@ let stream = null;
 let timerInterval = null;
 let startTime = null;
 let orbAnimFrame = null;
+let voicePreset = "default";
+
+const VOICE_PRESETS = {
+  "default":     { rate: 1.0,  pitch: 1.05, match: [/samantha|karen|victoria|zira|google.*female/i, /en-(US|GB)/i] },
+  "siri-female": { rate: 1.0,  pitch: 1.15, match: [/samantha|karen|victoria|zira|female|en-us/i, /en-(US|GB)/i] },
+  "siri-male":   { rate: 0.98, pitch: 0.85, match: [/daniel|fred|aaron|david|male|en-gb/i, /en-(US|GB)/i] },
+  "robotic":     { rate: 0.85, pitch: 0.3,  match: [/google uk english male|en-gb.*male|male/i, /en/i] },
+  "calm":        { rate: 0.92, pitch: 0.95, match: [/samantha|moira|karen|female/i, /en-(US|GB|AU)/i] },
+};
+
 
 const STATUS_LABEL = { idle:"Tap to speak", listening:"Listening…", thinking:"Nova is thinking…", speaking:"Nova is speaking…" };
 const STATUS_COLOR = { idle:"#475569", listening:"#f472b6", thinking:"#34d399", speaking:"#818cf8" };
@@ -468,13 +478,17 @@ function speak(text, onDone) {
   synth.cancel();
   aiCaption = text; status = "speaking"; syncCallUI();
 
+  const preset = VOICE_PRESETS[voicePreset] || VOICE_PRESETS.default;
   const u = new SpeechSynthesisUtterance(text);
-  u.rate = 1.0; u.pitch = 1.05; u.volume = 1;
+  u.rate = preset.rate; u.pitch = preset.pitch; u.volume = 1;
 
   const pickVoice = () => {
     const voices = synth.getVoices();
-    const v = voices.find(v => /samantha|karen|victoria|zira|google.*female/i.test(v.name))
-      || voices.find(v => /en-(US|GB)/i.test(v.lang));
+    let v = null;
+    for (const pattern of preset.match) {
+      v = voices.find(v => pattern.test(v.name) || pattern.test(v.lang));
+      if (v) break;
+    }
     if (v) u.voice = v;
   };
   pickVoice();
@@ -630,6 +644,7 @@ async function startCall() {
   questionIndex = 0; usedTech = []; pendingDurationFollowup = false;
 
   showScreen('call-screen');
+  maybeShowTips();
 
   // resume badge
   const badge = document.getElementById('resume-badge');
@@ -717,3 +732,73 @@ document.getElementById('resume-text').addEventListener('input', e => {
   resume = e.target.value;
   if (resumeFile) { resumeFile = null; setDropZoneState('idle'); }
 });
+
+// ════════════════════════════════════════════════
+// VOICE PICKER
+// ════════════════════════════════════════════════
+const voiceSelectSetup = document.getElementById('voice-select');
+const voiceSelectCall  = document.getElementById('voice-select-call');
+const voicePopover     = document.getElementById('voice-popover');
+const btnVoice         = document.getElementById('btn-voice');
+
+function setVoicePreset(val) {
+  voicePreset = val;
+  if (voiceSelectSetup) voiceSelectSetup.value = val;
+  if (voiceSelectCall) voiceSelectCall.value = val;
+  try { localStorage.setItem('novaVoicePreset', val); } catch {}
+}
+
+// Restore saved preference
+try {
+  const saved = localStorage.getItem('novaVoicePreset');
+  if (saved && VOICE_PRESETS[saved]) setVoicePreset(saved);
+} catch {}
+
+voiceSelectSetup?.addEventListener('change', e => setVoicePreset(e.target.value));
+voiceSelectCall?.addEventListener('change', e => {
+  setVoicePreset(e.target.value);
+  voicePopover.classList.add('hidden');
+  // Preview the new voice
+  speak("This is how I'll sound now.");
+});
+
+btnVoice?.addEventListener('click', () => {
+  voicePopover.classList.toggle('hidden');
+});
+
+// Close popover when tapping elsewhere
+document.addEventListener('click', e => {
+  if (!voicePopover || voicePopover.classList.contains('hidden')) return;
+  if (!voicePopover.contains(e.target) && e.target !== btnVoice) {
+    voicePopover.classList.add('hidden');
+  }
+});
+
+// ════════════════════════════════════════════════
+// TIPS / HELP OVERLAY
+// ════════════════════════════════════════════════
+const tipsOverlay   = document.getElementById('tips-overlay');
+const tipsClose     = document.getElementById('tips-close');
+const tipsDontShow  = document.getElementById('tips-dont-show');
+const btnHelp       = document.getElementById('btn-help');
+
+function showTips() {
+  if (tipsOverlay) tipsOverlay.classList.remove('hidden');
+}
+function hideTips() {
+  if (tipsOverlay) tipsOverlay.classList.add('hidden');
+}
+function maybeShowTips() {
+  let dontShow = false;
+  try { dontShow = localStorage.getItem('novaTipsDismissed') === 'true'; } catch {}
+  if (!dontShow) showTips();
+}
+
+tipsClose?.addEventListener('click', () => {
+  try {
+    if (tipsDontShow?.checked) localStorage.setItem('novaTipsDismissed', 'true');
+  } catch {}
+  hideTips();
+});
+
+btnHelp?.addEventListener('click', () => showTips());
