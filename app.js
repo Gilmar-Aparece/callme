@@ -1,31 +1,191 @@
 // ════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════
-const SYSTEM_PROMPT = `You are Nova, an elite AI interview coach conducting a live spoken mock interview.
+// ════════════════════════════════════════════════
+// SCRIPTED QUESTION BANK (no API — fully offline)
+// ════════════════════════════════════════════════
 
-STRICT SPEAKING RULES:
-- This is VOICE. Write ONLY natural spoken sentences. Zero markdown, zero bullet points, zero lists, no asterisks, no emojis.
-- Keep every response under 60 words — short, spoken, natural.
-- After each candidate answer: give one brief, specific reaction (refer back to something they actually said), then ask exactly one follow-up or next question.
-- Be warm, sharp, curious. Sound human, not robotic. Vary your phrasing — don't reuse the same reaction words every turn.
-- End when candidate says stop / goodbye / end / finish / done.
+// Reactions said BEFORE asking the next question — randomized so it feels natural
+const REACTIONS = [
+  "Got it, thanks for sharing that.",
+  "Nice, that's good to know.",
+  "Interesting, I appreciate the detail.",
+  "Okay, that makes sense.",
+  "Cool, thanks for walking me through that.",
+  "Good to hear.",
+  "Alright, noted.",
+  "That's helpful context, thank you.",
+];
 
-QUESTION TOPICS — rotate naturally across the conversation, picked based on {RESUME} and {JOB_TITLE}:
-1. Personal / icebreaker: "tell me about yourself", hobbies, favorite color, favorite tech stack, what they enjoy outside work, etc. For light icebreaker questions like favorite color/food/hobby, these are just rapport-builders — react naturally to whatever the candidate says, don't overanalyze.
-2. Technical depth tied to their actual resume: specific languages, frameworks, projects, and tools they listed (e.g. PHP, JavaScript, Laravel, Vue, databases, cloud platforms — whatever appears in {RESUME}).
-3. Teamwork & collaboration: how they work with a team, how they communicate with designers/PMs/other devs, tools used (Slack, Jira, Git, code reviews, standups), how they handle disagreements or feedback.
-4. Debugging & problem solving: ask about a specific bug or tough technical problem from their resume or experience. Always follow up with "How long did it take you to fix that?" or a similar natural question about the timeline (hours, days, a sprint, etc.) — get a real, specific duration.
-5. Project timelines & ownership: deadlines, how they planned work, what they'd do differently.
-6. HR / behavioral: strengths, weaknesses, why this role, salary expectations (if relevant), career goals.
+// Personal / icebreaker questions
+const ICEBREAKERS = [
+  "Tell me a little about yourself and your background.",
+  "What's your favorite color, and why does that one stand out to you?",
+  "Do you have a favorite color? I'd love to know why you picked it.",
+  "Just a fun one — what's your favorite color and what makes you like it?",
+  "What do you enjoy doing outside of work?",
+  "What's your favorite programming language to work in, and why?",
+  "If you could only use one tool for the rest of your career, what would it be, and why?",
+  "What's something you're proud of that isn't on your resume?",
+  "What's your favorite food, and why does it stand out to you?",
+  "If you had a free weekend with no plans, how would you spend it?",
+  "What's a hobby of yours, and how did you get into it?",
+  "What's your favorite movie or show, and what do you like about it?",
+  "Do you have a favorite season? What makes it your favorite?",
+  "What's something that always makes you laugh?",
+  "If you could travel anywhere right now, where would you go and why?",
+  "What's a small thing that makes your day better?",
+];
 
-GROUNDING RULE: Base technical and project questions on what's actually written in {RESUME} — reference real company names, technologies, and roles from it whenever possible. If {RESUME} is thin or generic, ask broader questions suited to {JOB_TITLE} and keep things realistic for that role.
+// Team contribution questions
+const CONTRIBUTION = [
+  "How do you think you can contribute to our team?",
+  "What unique strengths would you bring to this team?",
+  "How do you usually add value beyond just your own tasks?",
+  "If you joined this team tomorrow, what's the first thing you'd want to help with?",
+  "What kind of role do you naturally take on in a team — leader, supporter, problem-solver?",
+  "How do you help teammates who are stuck or struggling with something?",
+  "What would your past coworkers say you bring to a team?",
+  "How do you make sure your work fits well with what the rest of the team is doing?",
+];
 
-CANDIDATE RESUME (base technical/project questions on this):
-{RESUME}
+// Teamwork & collaboration questions
+const TEAMWORK = [
+  "How do you usually collaborate with your team on a project?",
+  "What tools does your team use for communication and task tracking, like Slack or Jira?",
+  "Tell me about a time you disagreed with a teammate. How did you handle it?",
+  "How do you handle code reviews, both giving and receiving feedback?",
+  "How do you stay in sync with designers or product managers during a project?",
+  "Describe how a typical standup or team meeting goes for you.",
+  "How do you support a teammate who's falling behind on their tasks?",
+  "Tell me about a successful team project you were part of. What made it work well?",
+  "How do you handle it when a teammate's work depends on something you haven't finished yet?",
+];
 
-ROLE THEY ARE APPLYING FOR: {JOB_TITLE}
+// Debugging / problem solving — always followed by a duration question
+const DEBUGGING = [
+  "Tell me about a tricky bug you've fixed recently. What was the issue?",
+  "Walk me through a time something broke in production. How did you find the root cause?",
+  "What's the hardest technical problem you've solved in your last role?",
+  "Have you ever dealt with a performance issue? What did you do to fix it?",
+  "Tell me about a bug that took longer than expected to fix. What made it difficult?",
+  "Describe a time you had to debug code that someone else wrote.",
+];
+const DURATION_FOLLOWUPS = [
+  "How long did it take you to fix that?",
+  "Roughly how many days did that take from start to finish?",
+  "Was that something you fixed in a few hours, or did it stretch over days?",
+  "How long were you working on that issue before it was resolved?",
+  "Looking back, how many days would you say that bug cost you?",
+];
 
-Start with a warm 2-sentence greeting then immediately ask your first question — usually a light "tell me about yourself" or icebreaker — based on their resume and the role.`;
+// Project timeline / ownership questions
+const TIMELINE = [
+  "Tell me about a project where you owned the timeline. How did you plan it out?",
+  "Have you ever had to push back on a deadline? How did that conversation go?",
+  "Looking back at a past project, what would you do differently?",
+  "How do you prioritize tasks when everything feels urgent?",
+  "Tell me about a project that took longer than planned. What happened?",
+  "How do you estimate how long a task or feature will take you?",
+];
+
+// HR / behavioral questions
+const HR = [
+  "What would you say is your biggest strength?",
+  "What's an area you're actively working to improve?",
+  "Why are you interested in this role?",
+  "Where do you see yourself in a few years?",
+  "What kind of work environment helps you do your best work?",
+  "What motivates you to do your best work?",
+  "Tell me about a time you received tough feedback. How did you respond?",
+  "What are you looking for in your next role that you don't have now?",
+];
+
+// Tech-specific question pools, keyed by keyword found in resume
+const TECH_QUESTIONS = {
+  php:        ["Tell me about a project where you used PHP. What did you build?", "How do you handle errors and exceptions in your PHP code?"],
+  laravel:    ["What do you like about working with Laravel?", "Have you worked with Laravel's Eloquent ORM? Tell me about that."],
+  javascript: ["How comfortable are you with JavaScript, and what's a project you used it in?", "Do you prefer working with vanilla JavaScript or a framework, and why?"],
+  vue:        ["Tell me about your experience working with Vue.js.", "How do you manage state in a Vue application?"],
+  react:      ["Tell me about a React project you've worked on.", "How do you manage state in your React applications — hooks, context, or something else?"],
+  node:       ["What kind of backend work have you done with Node.js?", "How do you structure a Node.js API project?"],
+  mysql:      ["How do you approach designing a database schema in MySQL?", "Tell me about a time you had to optimize a slow database query."],
+  sql:        ["How would you describe your SQL skills, and where have you used them?", "Tell me about a time you had to optimize a slow query."],
+  docker:     ["How have you used Docker in your past projects?", "Walk me through how you'd containerize an application you've built."],
+  aws:        ["What AWS services have you worked with?", "Tell me about deploying an application to AWS."],
+  git:        ["How do you use Git in your day-to-day workflow?", "Tell me about a time a merge conflict gave you trouble."],
+  api:        ["Tell me about an API you've built or worked with.", "How do you approach designing a REST API?"],
+  python:     ["Tell me about a project where you used Python.", "What Python libraries or frameworks do you use most often?"],
+  css:        ["How do you approach responsive design and styling?", "What's your go-to approach for CSS — plain CSS, Sass, Tailwind, or something else?"],
+  html:       ["How do you ensure your HTML is accessible and semantic?", "Tell me about a project where front-end structure mattered a lot."],
+};
+
+// Build a flow of question "slots" — types in rough rotation order
+const QUESTION_FLOW = ["icebreaker", "tech", "teamwork", "debugging", "tech", "contribution", "timeline", "hr", "teamwork", "tech", "contribution", "hr"];
+
+let questionIndex = 0;
+let usedTech = [];
+let pendingDurationFollowup = false;
+
+function pickRandom(arr, exclude) {
+  const pool = exclude ? arr.filter(x => !exclude.includes(x)) : arr;
+  return pool[Math.floor(Math.random() * pool.length)] || arr[Math.floor(Math.random() * arr.length)];
+}
+
+function detectTechFromResume() {
+  const text = (resume || "").toLowerCase();
+  return Object.keys(TECH_QUESTIONS).filter(k => text.includes(k));
+}
+
+function getNextQuestion() {
+  // If we owe a duration follow-up from a debugging answer, ask it first
+  if (pendingDurationFollowup) {
+    pendingDurationFollowup = false;
+    return pickRandom(DURATION_FOLLOWUPS);
+  }
+
+  const slot = QUESTION_FLOW[questionIndex % QUESTION_FLOW.length];
+  questionIndex++;
+
+  switch (slot) {
+    case "icebreaker":
+      return pickRandom(ICEBREAKERS);
+    case "contribution":
+      return pickRandom(CONTRIBUTION);
+    case "teamwork":
+      return pickRandom(TEAMWORK);
+    case "timeline":
+      return pickRandom(TIMELINE);
+    case "hr":
+      return pickRandom(HR);
+    case "debugging":
+      pendingDurationFollowup = true; // ask duration right after this is answered
+      return pickRandom(DEBUGGING);
+    case "tech": {
+      const found = detectTechFromResume();
+      if (found.length === 0) return pickRandom(ICEBREAKERS); // fallback if resume has no recognized tech
+      const key = pickRandom(found, usedTech.length < found.length ? usedTech : []);
+      usedTech.push(key);
+      return pickRandom(TECH_QUESTIONS[key]);
+    }
+    default:
+      return pickRandom(ICEBREAKERS);
+  }
+}
+
+function getClosingMessage() {
+  return "That was an excellent session! You spoke with real confidence and depth. Keep practicing out loud — you're going to do great in the real interview. Good luck!";
+}
+
+function getOpeningMessage() {
+  const greetings = [
+    `Hi, I'm Nova. Great to have you here for this ${jobTitle} interview practice.`,
+    `Hello! I'm Nova, and I'll be running your mock interview for the ${jobTitle} role today.`,
+    `Hi there, I'm Nova. Let's get started with your ${jobTitle} interview practice.`,
+  ];
+  return pickRandom(greetings) + " " + pickRandom(ICEBREAKERS);
+}
+
 
 let resume = "";
 let resumeFile = null;
@@ -373,38 +533,29 @@ function stopListen() {
 }
 
 // ════════════════════════════════════════════════
-// AI
+// SCRIPTED INTERVIEW LOGIC (no API)
 // ════════════════════════════════════════════════
-async function handleSpeak(userText) {
+function handleSpeak(userText) {
   status = "thinking"; syncCallUI();
   const userMsg = { role: "user", text: userText };
   messages.push(userMsg); renderMessages();
 
   const endWords = ["goodbye","end session","stop interview","that's all","i'm done","finish","end the call","stop","quit"];
   if (endWords.some(w => userText.toLowerCase().includes(w))) {
-    const bye = "That was an excellent session! You spoke with real confidence and depth. Keep practicing out loud — you're going to do great in the real interview. Good luck!";
+    const bye = getClosingMessage();
     messages.push({ role:"assistant", text:bye }); renderMessages();
     speak(bye, () => endToEnded());
     return;
   }
 
-  const sys = SYSTEM_PROMPT
-    .replace("{RESUME}", resume || "No resume — treat as mid-level web developer.")
-    .replace("{JOB_TITLE}", jobTitle);
-  const apiMsgs = messages.map(m => ({ role: m.role==="assistant"?"assistant":"user", content: m.text }));
-
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:180, system:sys, messages:apiMsgs }),
-    });
-    const data = await res.json();
-    const aiText = data.content?.map(b=>b.text||"").join("") || "Could you repeat that?";
+  // Small natural delay so it doesn't feel instant/robotic
+  setTimeout(() => {
+    const reaction = pickRandom(REACTIONS);
+    const nextQuestion = getNextQuestion();
+    const aiText = reaction + " " + nextQuestion;
     messages.push({ role:"assistant", text:aiText }); renderMessages();
     speak(aiText, () => setTimeout(startListen, 400));
-  } catch {
-    setCallError("Connection error. Tap mic to retry."); status = "idle"; syncCallUI();
-  }
+  }, 500 + Math.random() * 600);
 }
 
 async function startCall() {
@@ -416,6 +567,7 @@ async function startCall() {
   }
   jobTitle = document.getElementById('job-title').value || "Web Developer";
   messages = []; elapsed = 0;
+  questionIndex = 0; usedTech = []; pendingDurationFollowup = false;
 
   showScreen('call-screen');
 
@@ -435,20 +587,11 @@ async function startCall() {
   drawOrb();
 
   status = "thinking"; syncCallUI();
-  const sys = SYSTEM_PROMPT.replace("{RESUME}", resume).replace("{JOB_TITLE}", jobTitle);
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:130, system:sys,
-        messages:[{role:"user",content:"Begin the interview."}] }),
-    });
-    const data = await res.json();
-    const opening = data.content?.map(b=>b.text||"").join("") || "Hi! I'm Nova. Let's get started — tell me about yourself.";
+  setTimeout(() => {
+    const opening = getOpeningMessage();
     messages.push({ role:"assistant", text:opening }); renderMessages();
     speak(opening, () => setTimeout(startListen, 300));
-  } catch {
-    setCallError("Failed to connect. Check your network."); status = "idle"; syncCallUI();
-  }
+  }, 400 + Math.random() * 400);
 }
 
 function endToEnded() {
