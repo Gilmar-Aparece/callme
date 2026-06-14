@@ -473,9 +473,29 @@ function speak(text, onDone) {
   const v = voices.find(v => /samantha|karen|victoria|zira|google.*female/i.test(v.name))
     || voices.find(v => /en-(US|GB)/i.test(v.lang));
   if (v) u.voice = v;
-  u.onend = () => { aiCaption = ""; status = "idle"; syncCallUI(); onDone?.(); };
-  u.onerror = () => { status = "idle"; syncCallUI(); onDone?.(); };
+
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    aiCaption = ""; status = "idle"; syncCallUI(); onDone?.();
+  };
+
+  u.onend = finish;
+  u.onerror = finish;
+
+  // Fallback: some browsers (esp. mobile) silently fail to fire onend/onerror.
+  // Estimate ~110ms per word (min 4s) and force progress if TTS gets stuck.
+  const estMs = Math.max(4000, text.split(/\s+/).length * 380);
+  setTimeout(finish, estMs);
+
   synth.speak(u);
+
+  // Extra guard: if speech never actually starts (some Android WebViews),
+  // bail out quickly so the conversation doesn't hang.
+  setTimeout(() => {
+    if (!done && !synth.speaking && !synth.pending) finish();
+  }, 600);
 }
 
 // ════════════════════════════════════════════════
@@ -545,6 +565,23 @@ function handleSpeak(userText) {
     const bye = getClosingMessage();
     messages.push({ role:"assistant", text:bye }); renderMessages();
     speak(bye, () => endToEnded());
+    return;
+  }
+
+  // Friendly greeting handling — only on the very first user message
+  const greetWords = ["hello","hi","hey","good morning","good afternoon","good evening"];
+  const isGreeting = greetWords.some(w => userText.toLowerCase().trim().startsWith(w));
+  if (isGreeting && messages.filter(m => m.role === "user").length === 1) {
+    setTimeout(() => {
+      const greetReplies = [
+        "Hey there! Glad you're here.",
+        "Hi! Nice to meet you.",
+        "Hello! Thanks for joining.",
+      ];
+      const aiText = pickRandom(greetReplies) + " " + getNextQuestion();
+      messages.push({ role:"assistant", text:aiText }); renderMessages();
+      speak(aiText, () => setTimeout(startListen, 400));
+    }, 400 + Math.random() * 400);
     return;
   }
 
