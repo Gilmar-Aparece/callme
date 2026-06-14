@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nova Interview</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ══ SETUP SCREEN ══ -->
+<div id="setup-screen" class="screen active">
+  <div class="setup-inner">
+    <div class="setup-header">
+      <div class="orb-icon-wrap">
+        <div class="orb-icon">✦</div>
+        <div class="orb-ring"></div>
+      </div>
+      <h1>Nova Interview</h1>
+      <p>Upload your resume · Voice-powered · Resume-aware answers</p>
+    </div>
+
+    <div class="form-stack">
+      <div class="card">
+        <label for="job-title">Role You're Applying For</label>
+        <input type="text" id="job-title" value="Web Developer"
+          placeholder="e.g. PHP Developer · Full Stack · Frontend Engineer" />
+      </div>
+
+      <div class="card">
+        <label>Your Resume</label>
+        <p class="hint">Upload your resume and Nova will base every question on your real companies, stack, and experience.</p>
+
+        <div id="drop-zone">
+          <input type="file" id="file-input" accept=".pdf,.docx,.txt" style="display:none" />
+          <div id="dz-idle">
+            <div class="dz-icon">📄</div>
+            <div class="dz-title">Drop your resume here</div>
+            <div class="dz-sub">or click to browse · PDF, DOCX, TXT</div>
+          </div>
+          <div id="dz-loading" style="display:none; color:#6366f1; font-size:14px;">
+            <div class="dz-spin">⏳</div>
+            <div>Reading your resume…</div>
+          </div>
+          <div id="dz-done" style="display:none;">
+            <div style="font-size:32px; margin-bottom:6px;">✅</div>
+            <div class="dz-done-name" id="dz-filename"></div>
+            <div class="dz-done-meta" id="dz-chars"></div>
+          </div>
+        </div>
+
+        <div class="divider">
+          <div class="divider-line"></div>
+          <span>or paste text</span>
+          <div class="divider-line"></div>
+        </div>
+
+        <textarea id="resume-text" rows="6"
+          placeholder="PHP Developer at Acme Corp (2020–2024)&#10;• Laravel REST APIs, 50k daily users&#10;• Led team of 4 via Slack &amp; Jira&#10;• Fixed race condition in payment — took 3 days&#10;• Stack: PHP 8, MySQL, Vue.js, Docker, AWS"></textarea>
+      </div>
+
+      <div id="setup-error" class="error-box hidden"></div>
+
+      <button class="btn-start" id="btn-start">✦ &nbsp;Start Voice Interview</button>
+      <p class="setup-tip">Chrome recommended · Allow microphone · Say "goodbye" to end</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CALL SCREEN ══ -->
+<div id="call-screen" class="screen">
+  <div id="ambient-blob"></div>
+
+  <div class="call-topbar">
+    <div class="topbar-left">
+      <div class="live-dot"></div>
+      <span>Live Interview</span>
+      <span id="resume-badge" class="resume-badge" style="display:none;"></span>
+    </div>
+    <div id="call-timer">00:00</div>
+    <button class="btn-end" id="btn-end">End</button>
+  </div>
+
+  <div class="call-body">
+    <!-- Orb -->
+    <div class="orb-area">
+      <svg id="orb-svg" width="168" height="168" viewBox="0 0 168 168" style="overflow:visible">
+        <defs>
+          <radialGradient id="g1" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#334155" stop-opacity="0.85" />
+            <stop offset="100%" stop-color="#1e293b" stop-opacity="0.2" />
+          </radialGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <g id="orb-rings"></g>
+        <g id="orb-bars"></g>
+        <circle cx="84" cy="84" r="54" fill="url(#g1)" filter="url(#glow)" id="orb-circle"/>
+        <text id="orb-emoji" x="84" y="92" text-anchor="middle" font-size="26" style="user-select:none">✦</text>
+      </svg>
+      <div class="orb-label">
+        <div class="name">Nova</div>
+        <div class="state" id="status-label">Tap to speak</div>
+      </div>
+    </div>
+
+    <!-- Nova caption -->
+    <div id="ai-caption-box" class="hidden">
+      <div class="caption-label">Nova</div>
+      <p id="ai-caption-text"></p>
+    </div>
+
+    <!-- Live user transcript -->
+    <div id="live-user-box">
+      <div id="live-transcript" class="hidden">
+        <div class="you-label">You</div>
+        <div class="you-text">
+          <span id="live-final"></span>
+          <span id="live-interim" class="you-interim"></span>
+        </div>
+      </div>
+      <div id="call-error" class="hidden"></div>
+    </div>
+
+    <!-- Message history -->
+    <div id="msg-history"></div>
+
+    <!-- Mic button -->
+    <div class="mic-area">
+      <div class="mic-btn-wrap" id="mic-btn-wrap">
+        <button id="mic-btn">🎙</button>
+      </div>
+      <p class="mic-hint" id="mic-hint">Tap mic to speak · "goodbye" to end</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ENDED SCREEN ══ -->
+<div id="ended-screen" class="screen">
+  <div class="ended-inner">
+    <div class="ended-emoji">🎉</div>
+    <h2>Session Complete</h2>
+    <p class="ended-meta" id="ended-meta"></p>
+    <p class="ended-tip">Speaking out loud is the fastest way to improve. Keep practicing.</p>
+
+    <div id="transcript-box" class="hidden">
+      <div class="tx-label">Transcript</div>
+      <div id="transcript-entries"></div>
+    </div>
+
+    <div class="ended-btns">
+      <button class="btn-again" id="btn-again">✦ Practice Again</button>
+      <button class="btn-edit" id="btn-edit">Edit Resume</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
