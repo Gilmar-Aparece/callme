@@ -1,195 +1,70 @@
 // ════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════
-// ════════════════════════════════════════════════
-// SCRIPTED QUESTION BANK (no API — fully offline)
-// ════════════════════════════════════════════════
 
-// Reactions said BEFORE asking the next question — randomized so it feels natural
-const REACTIONS = [
-  "Got it, thanks for sharing that.",
-  "Nice, that's good to know.",
-  "Interesting, I appreciate the detail.",
-  "Okay, that makes sense.",
-  "Cool, thanks for walking me through that.",
-  "Good to hear.",
-  "Alright, noted.",
-  "That's helpful context, thank you.",
-];
-
-// Personal / icebreaker questions
-const ICEBREAKERS = [
-  "Tell me a little about yourself and your background.",
-  "What's your favorite color, and why does that one stand out to you?",
-  "Do you have a favorite color? I'd love to know why you picked it.",
-  "Just a fun one — what's your favorite color and what makes you like it?",
-  "What do you enjoy doing outside of work?",
-  "What's your favorite programming language to work in, and why?",
-  "If you could only use one tool for the rest of your career, what would it be, and why?",
-  "What's something you're proud of that isn't on your resume?",
-  "What's your favorite food, and why does it stand out to you?",
-  "If you had a free weekend with no plans, how would you spend it?",
-  "What's a hobby of yours, and how did you get into it?",
-  "What's your favorite movie or show, and what do you like about it?",
-  "Do you have a favorite season? What makes it your favorite?",
-  "What's something that always makes you laugh?",
-  "If you could travel anywhere right now, where would you go and why?",
-  "What's a small thing that makes your day better?",
-];
-
-// Team contribution questions
-const CONTRIBUTION = [
-  "How do you think you can contribute to our team?",
-  "What unique strengths would you bring to this team?",
-  "How do you usually add value beyond just your own tasks?",
-  "If you joined this team tomorrow, what's the first thing you'd want to help with?",
-  "What kind of role do you naturally take on in a team — leader, supporter, problem-solver?",
-  "How do you help teammates who are stuck or struggling with something?",
-  "What would your past coworkers say you bring to a team?",
-  "How do you make sure your work fits well with what the rest of the team is doing?",
-];
-
-// Teamwork & collaboration questions
-const TEAMWORK = [
-  "How do you usually collaborate with your team on a project?",
-  "What tools does your team use for communication and task tracking, like Slack or Jira?",
-  "Tell me about a time you disagreed with a teammate. How did you handle it?",
-  "How do you handle code reviews, both giving and receiving feedback?",
-  "How do you stay in sync with designers or product managers during a project?",
-  "Describe how a typical standup or team meeting goes for you.",
-  "How do you support a teammate who's falling behind on their tasks?",
-  "Tell me about a successful team project you were part of. What made it work well?",
-  "How do you handle it when a teammate's work depends on something you haven't finished yet?",
-];
-
-// Debugging / problem solving — always followed by a duration question
-const DEBUGGING = [
-  "Tell me about a tricky bug you've fixed recently. What was the issue?",
-  "Walk me through a time something broke in production. How did you find the root cause?",
-  "What's the hardest technical problem you've solved in your last role?",
-  "Have you ever dealt with a performance issue? What did you do to fix it?",
-  "Tell me about a bug that took longer than expected to fix. What made it difficult?",
-  "Describe a time you had to debug code that someone else wrote.",
-];
-const DURATION_FOLLOWUPS = [
-  "How long did it take you to fix that?",
-  "Roughly how many days did that take from start to finish?",
-  "Was that something you fixed in a few hours, or did it stretch over days?",
-  "How long were you working on that issue before it was resolved?",
-  "Looking back, how many days would you say that bug cost you?",
-];
-
-// Project timeline / ownership questions
-const TIMELINE = [
-  "Tell me about a project where you owned the timeline. How did you plan it out?",
-  "Have you ever had to push back on a deadline? How did that conversation go?",
-  "Looking back at a past project, what would you do differently?",
-  "How do you prioritize tasks when everything feels urgent?",
-  "Tell me about a project that took longer than planned. What happened?",
-  "How do you estimate how long a task or feature will take you?",
-];
-
-// HR / behavioral questions
-const HR = [
-  "What would you say is your biggest strength?",
-  "What's an area you're actively working to improve?",
-  "Why are you interested in this role?",
-  "Where do you see yourself in a few years?",
-  "What kind of work environment helps you do your best work?",
-  "What motivates you to do your best work?",
-  "Tell me about a time you received tough feedback. How did you respond?",
-  "What are you looking for in your next role that you don't have now?",
-];
-
-// Tech-specific question pools, keyed by keyword found in resume
-const TECH_QUESTIONS = {
-  php:        ["Tell me about a project where you used PHP. What did you build?", "How do you handle errors and exceptions in your PHP code?"],
-  laravel:    ["What do you like about working with Laravel?", "Have you worked with Laravel's Eloquent ORM? Tell me about that."],
-  javascript: ["How comfortable are you with JavaScript, and what's a project you used it in?", "Do you prefer working with vanilla JavaScript or a framework, and why?"],
-  vue:        ["Tell me about your experience working with Vue.js.", "How do you manage state in a Vue application?"],
-  react:      ["Tell me about a React project you've worked on.", "How do you manage state in your React applications — hooks, context, or something else?"],
-  node:       ["What kind of backend work have you done with Node.js?", "How do you structure a Node.js API project?"],
-  mysql:      ["How do you approach designing a database schema in MySQL?", "Tell me about a time you had to optimize a slow database query."],
-  sql:        ["How would you describe your SQL skills, and where have you used them?", "Tell me about a time you had to optimize a slow query."],
-  docker:     ["How have you used Docker in your past projects?", "Walk me through how you'd containerize an application you've built."],
-  aws:        ["What AWS services have you worked with?", "Tell me about deploying an application to AWS."],
-  git:        ["How do you use Git in your day-to-day workflow?", "Tell me about a time a merge conflict gave you trouble."],
-  api:        ["Tell me about an API you've built or worked with.", "How do you approach designing a REST API?"],
-  python:     ["Tell me about a project where you used Python.", "What Python libraries or frameworks do you use most often?"],
-  css:        ["How do you approach responsive design and styling?", "What's your go-to approach for CSS — plain CSS, Sass, Tailwind, or something else?"],
-  html:       ["How do you ensure your HTML is accessible and semantic?", "Tell me about a project where front-end structure mattered a lot."],
-};
-
-// Build a flow of question "slots" — types in rough rotation order
-const QUESTION_FLOW = ["icebreaker", "tech", "teamwork", "debugging", "tech", "contribution", "timeline", "hr", "teamwork", "tech", "contribution", "hr"];
-
-let questionIndex = 0;
-let usedTech = [];
-let pendingDurationFollowup = false;
-
-function pickRandom(arr, exclude) {
-  const pool = exclude ? arr.filter(x => !exclude.includes(x)) : arr;
-  return pool[Math.floor(Math.random() * pool.length)] || arr[Math.floor(Math.random() * arr.length)];
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function detectTechFromResume() {
-  const text = (resume || "").toLowerCase();
-  return Object.keys(TECH_QUESTIONS).filter(k => text.includes(k));
-}
+// ════════════════════════════════════════════════
+// NOVA SYSTEM PROMPT (Claude API)
+// ════════════════════════════════════════════════
+function buildSystemPrompt() {
+  return `You are Nova, a friendly and professional AI interview assistant. Your ONLY job is to answer questions that the user (candidate) asks you.
 
-function getNextQuestion() {
-  // If we owe a duration follow-up from a debugging answer, ask it first
-  if (pendingDurationFollowup) {
-    pendingDurationFollowup = false;
-    return pickRandom(DURATION_FOLLOWUPS);
-  }
+CRITICAL RULES:
+1. NEVER ask the user any questions — not follow-ups, not clarifications, nothing.
+2. NEVER ask "What about you?" or "How about you?" or turn anything back to the user.
+3. The user asks. You answer. That's it.
+4. Keep answers concise and conversational — 2 to 4 sentences max.
+5. Base your answers on the candidate's resume when relevant (e.g. if they ask about their experience or skills that appear in their resume).
+6. If they greet you, respond warmly but do NOT ask anything back.
+7. If they say goodbye or want to end, say a warm farewell.
+8. You are speaking aloud so avoid bullet points, markdown, or lists — use natural spoken sentences only.
 
-  const slot = QUESTION_FLOW[questionIndex % QUESTION_FLOW.length];
-  questionIndex++;
+The candidate is applying for: ${jobTitle}
 
-  switch (slot) {
-    case "icebreaker":
-      return pickRandom(ICEBREAKERS);
-    case "contribution":
-      return pickRandom(CONTRIBUTION);
-    case "teamwork":
-      return pickRandom(TEAMWORK);
-    case "timeline":
-      return pickRandom(TIMELINE);
-    case "hr":
-      return pickRandom(HR);
-    case "debugging":
-      pendingDurationFollowup = true; // ask duration right after this is answered
-      return pickRandom(DEBUGGING);
-    case "tech": {
-      const found = detectTechFromResume();
-      if (found.length === 0) return pickRandom(ICEBREAKERS); // fallback if resume has no recognized tech
-      const key = pickRandom(found, usedTech.length < found.length ? usedTech : []);
-      usedTech.push(key);
-      return pickRandom(TECH_QUESTIONS[key]);
-    }
-    default:
-      return pickRandom(ICEBREAKERS);
-  }
+Their resume:
+---
+${resume}
+---
+
+Remember: User asks → Nova answers. Nova NEVER asks questions.`;
 }
 
 function getClosingMessage() {
-  return "That was an excellent session! You spoke with real confidence and depth. Keep practicing out loud — you're going to do great in the real interview. Good luck!";
+  return "It was great talking with you! Best of luck — you're going to do great. Take care!";
 }
 
 function getOpeningMessage() {
   const greetings = [
-    `Hi, I'm Nova. Great to have you here for this ${jobTitle} interview practice.`,
-    `Hello! I'm Nova, and I'll be running your mock interview for the ${jobTitle} role today.`,
-    `Hi there, I'm Nova. Let's get started with your ${jobTitle} interview practice.`,
+    `Hi! I'm Nova, your interview assistant for the ${jobTitle} role. Feel free to ask me anything — about the role, your resume, or anything on your mind.`,
+    `Hello! I'm Nova. I've looked over your resume and I'm here to help with your ${jobTitle} interview prep. What would you like to know?`,
+    `Hey there! Nova here. I'm ready to help you with your ${jobTitle} interview. Go ahead and ask me anything!`,
   ];
-  return pickRandom(greetings) + " " + pickRandom(ICEBREAKERS);
+  return pickRandom(greetings);
 }
 
 
 let resume = "";
 let resumeFile = null;
 let jobTitle = "Web Developer";
+let candidateName = "";
+
+function extractNameFromResume(text) {
+  // Try first non-empty line — resumes almost always start with the candidate's name
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  for (const line of lines.slice(0, 5)) {
+    // Skip lines that look like headers, emails, phones, or URLs
+    if (/[@|http|linkedin|github|^\+?\d]/i.test(line)) continue;
+    // Must be 2–4 words, each starting with a capital letter (a name)
+    const words = line.split(/\s+/);
+    if (words.length >= 2 && words.length <= 4 && words.every(w => /^[A-Z]/.test(w))) {
+      return words[0]; // return first name only
+    }
+  }
+  return "";
+}
 let messages = [];
 let status = "idle";    // idle | listening | thinking | speaking
 let liveText = "";
@@ -426,6 +301,44 @@ function setDropZoneState(state, filename, chars) {
   }
 }
 
+// ════════════════════════════════════════════════
+// RESUME UPLOAD INTRO (spoken by Nova on setup screen)
+// ════════════════════════════════════════════════
+function speakResumeIntro(name) {
+  // Show Nova preview card on setup screen
+  const card = document.getElementById('nova-preview-card');
+  if (card) {
+    const nameStr = name ? name : "there";
+    const msgs = [
+      `Hi ${nameStr}! I've read your resume. I'll be asking you questions based on your background — your experience, your stack, and your projects. Ready when you are!`,
+      `Hey ${nameStr}! Resume loaded. I'll tailor every question to your actual experience. Just hit Start whenever you're ready.`,
+      `Got it, ${nameStr}! I've gone through your resume. I'll base all my questions on your real background. Let's make this feel like the real deal.`,
+      `Nice to meet you, ${nameStr}! I've read through your resume and I'm ready to run your mock interview. I'll focus on your experience and skills. Hit Start when you're set!`,
+    ];
+    const msg = msgs[Math.floor(Math.random() * msgs.length)];
+    card.textContent = msg;
+    card.classList.remove('hidden');
+
+    // speak it (uses the synth — no mic needed on setup screen)
+    const u = new SpeechSynthesisUtterance(msg);
+    u.rate = 1.0; u.pitch = 1.05; u.volume = 1;
+    const voices = window.speechSynthesis.getVoices();
+    const v = voices.find(v => /samantha|karen|victoria|zira|google.*female/i.test(v.name))
+           || voices.find(v => /en-(US|GB)/i.test(v.lang));
+    if (v) u.voice = v;
+    window.speechSynthesis.cancel();
+    if (voices.length === 0) {
+      window.speechSynthesis.addEventListener('voiceschanged', () => {
+        const v2 = window.speechSynthesis.getVoices().find(v => /samantha|karen|zira/i.test(v.name));
+        if (v2) u.voice = v2;
+        window.speechSynthesis.speak(u);
+      }, { once: true });
+    } else {
+      window.speechSynthesis.speak(u);
+    }
+  }
+}
+
 async function handleFile(file) {
   if (!file) return;
   setDropZoneState('loading');
@@ -435,8 +348,10 @@ async function handleFile(file) {
     if (!text || text.length < 30) throw new Error("Could not read text from file. Try copy-pasting instead.");
     resume = text;
     resumeFile = file;
+    candidateName = extractNameFromResume(text);
     document.getElementById('resume-text').value = text;
     setDropZoneState('done', file.name, text.length);
+    speakResumeIntro(candidateName);
   } catch(e) {
     setDropZoneState('idle');
     const errEl = document.getElementById('setup-error');
@@ -581,14 +496,14 @@ function stopListen() {
 }
 
 // ════════════════════════════════════════════════
-// SCRIPTED INTERVIEW LOGIC (no API)
+// CLAUDE API — Nova answers user questions
 // ════════════════════════════════════════════════
-function handleSpeak(userText) {
+async function handleSpeak(userText) {
   status = "thinking"; syncCallUI();
-  const userMsg = { role: "user", text: userText };
-  messages.push(userMsg); renderMessages();
+  messages.push({ role: "user", text: userText }); renderMessages();
 
-  const endWords = ["goodbye","end session","stop interview","that's all","i'm done","finish","end the call","stop","quit"];
+  // Detect goodbye
+  const endWords = ["goodbye","end session","stop interview","that's all","i'm done","finish","end the call","bye","see you"];
   if (endWords.some(w => userText.toLowerCase().includes(w))) {
     const bye = getClosingMessage();
     messages.push({ role:"assistant", text:bye }); renderMessages();
@@ -596,31 +511,35 @@ function handleSpeak(userText) {
     return;
   }
 
-  // Friendly greeting handling — only on the very first user message
-  const greetWords = ["hello","hi","hey","good morning","good afternoon","good evening"];
-  const isGreeting = greetWords.some(w => userText.toLowerCase().trim().startsWith(w));
-  if (isGreeting && messages.filter(m => m.role === "user").length === 1) {
-    setTimeout(() => {
-      const greetReplies = [
-        "Hey there! Glad you're here.",
-        "Hi! Nice to meet you.",
-        "Hello! Thanks for joining.",
-      ];
-      const aiText = pickRandom(greetReplies) + " " + getNextQuestion();
-      messages.push({ role:"assistant", text:aiText }); renderMessages();
-      speak(aiText, () => setTimeout(startListen, 400));
-    }, 400 + Math.random() * 400);
-    return;
-  }
+  try {
+    // Build conversation history for the API
+    const apiMessages = messages.map(m => ({
+      role: m.role === "user" ? "user" : "assistant",
+      content: m.text
+    }));
 
-  // Small natural delay so it doesn't feel instant/robotic
-  setTimeout(() => {
-    const reaction = pickRandom(REACTIONS);
-    const nextQuestion = getNextQuestion();
-    const aiText = reaction + " " + nextQuestion;
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        system: buildSystemPrompt(),
+        messages: apiMessages
+      })
+    });
+
+    const data = await response.json();
+    const aiText = (data.content || []).map(b => b.type === "text" ? b.text : "").join("").trim()
+      || "I'm not sure about that — could you try rephrasing?";
+
     messages.push({ role:"assistant", text:aiText }); renderMessages();
     speak(aiText, () => setTimeout(startListen, 400));
-  }, 500 + Math.random() * 600);
+  } catch (err) {
+    const fallback = "Sorry, I had a connection issue. Please try again.";
+    messages.push({ role:"assistant", text:fallback }); renderMessages();
+    speak(fallback, () => setTimeout(startListen, 400));
+  }
 }
 
 async function startCall() {
@@ -641,7 +560,6 @@ async function startCall() {
   } catch {}
   jobTitle = document.getElementById('job-title').value || "Web Developer";
   messages = []; elapsed = 0;
-  questionIndex = 0; usedTech = []; pendingDurationFollowup = false;
 
   showScreen('call-screen');
   maybeShowTips();
@@ -730,6 +648,7 @@ dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.
 // Resume text area also updates resume
 document.getElementById('resume-text').addEventListener('input', e => {
   resume = e.target.value;
+  candidateName = extractNameFromResume(resume);
   if (resumeFile) { resumeFile = null; setDropZoneState('idle'); }
 });
 
