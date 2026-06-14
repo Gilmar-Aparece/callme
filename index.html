@@ -59,6 +59,18 @@
           placeholder="PHP Developer at Acme Corp (2020–2024)&#10;• Laravel REST APIs, 50k daily users&#10;• Led team of 4 via Slack &amp; Jira&#10;• Fixed race condition in payment — took 3 days&#10;• Stack: PHP 8, MySQL, Vue.js, Docker, AWS"></textarea>
       </div>
 
+      <div class="card">
+        <label for="voice-select">Nova's Voice</label>
+        <p class="hint">Choose the voice Nova speaks with during your interview.</p>
+        <select id="voice-select" class="voice-select">
+          <option value="default">Default</option>
+          <option value="siri-female">Siri-style (Female)</option>
+          <option value="siri-male">Siri-style (Male)</option>
+          <option value="robotic">Robotic</option>
+          <option value="calm">Calm / Soft</option>
+        </select>
+      </div>
+
       <div id="setup-error" class="error-box hidden"></div>
 
       <button class="btn-start" id="btn-start">✦ &nbsp;Start Voice Interview</button>
@@ -78,7 +90,21 @@
       <span id="resume-badge" class="resume-badge" style="display:none;"></span>
     </div>
     <div id="call-timer">00:00</div>
+    <button class="btn-voice" id="btn-help" title="How to use Nova">💡</button>
+    <button class="btn-voice" id="btn-voice" title="Change Nova's voice">🔊</button>
     <button class="btn-end" id="btn-end">End</button>
+  </div>
+
+  <!-- Voice picker dropdown (call screen) -->
+  <div id="voice-popover" class="voice-popover hidden">
+    <div class="voice-popover-title">Nova's Voice</div>
+    <select id="voice-select-call" class="voice-select">
+      <option value="default">Default</option>
+      <option value="siri-female">Siri-style (Female)</option>
+      <option value="siri-male">Siri-style (Male)</option>
+      <option value="robotic">Robotic</option>
+      <option value="calm">Calm / Soft</option>
+    </select>
   </div>
 
   <div class="call-body">
@@ -154,6 +180,50 @@
       <button class="btn-again" id="btn-again">✦ Practice Again</button>
       <button class="btn-edit" id="btn-edit">Edit Resume</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ TIPS / HELP OVERLAY ══ -->
+<div id="tips-overlay" class="tips-overlay hidden">
+  <div class="tips-card">
+    <div class="tips-header">
+      <div class="tips-icon">✦</div>
+      <h2>How to talk with Nova</h2>
+    </div>
+
+    <div class="tips-list">
+      <div class="tip-item">
+        <div class="tip-num">1</div>
+        <div class="tip-text"><strong>Allow microphone access</strong> when your browser asks. Nova listens through your mic and replies out loud.</div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-num">2</div>
+        <div class="tip-text"><strong>Tap the mic 🎙</strong> to start speaking. The ring around it pulses while Nova is listening.</div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-num">3</div>
+        <div class="tip-text"><strong>Speak naturally</strong> — when you pause for about 2 seconds, your answer is sent automatically. No need to tap anything again.</div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-num">4</div>
+        <div class="tip-text"><strong>While Nova is speaking 🔊</strong>, tap the mic (now showing ⏩) to interrupt and jump back in.</div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-num">5</div>
+        <div class="tip-text"><strong>Change Nova's voice</strong> anytime with the 🔊 button at the top — pick Default, Siri-style, Robotic, or Calm.</div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-num">6</div>
+        <div class="tip-text"><strong>Say "goodbye"</strong> (or "stop", "I'm done", "finish") to end the interview, or tap <em>End</em> anytime.</div>
+      </div>
+    </div>
+
+    <label class="tips-checkbox">
+      <input type="checkbox" id="tips-dont-show" />
+      <span>Don't show this again</span>
+    </label>
+
+    <button class="btn-start" id="tips-close">Got it, let's go ✦</button>
   </div>
 </div>
 
