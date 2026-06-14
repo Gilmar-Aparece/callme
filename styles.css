@@ -334,3 +334,37 @@
 
     /* Help button reuse */
     #btn-help { font-size: 14px; }
+
+    /* Nova preview card — shown after resume upload on setup screen */
+    .nova-preview-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 14px;
+      color: #c8c6e8;
+      line-height: 1.6;
+      position: relative;
+      animation: fadeSlideIn 0.4s ease;
+    }
+    .nova-preview-card::before {
+      content: "✦ Nova";
+      display: block;
+      position: absolute;
+      top: -10px;
+      left: 14px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #818cf8;
+      background: #0f0f1a;
+      padding: 0 6px;
+      letter-spacing: 0.08em;
+    }
+    .nova-preview-card.hidden { display: none; }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
